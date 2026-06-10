@@ -20,7 +20,10 @@ app.use(
 app.use(helmet());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000",
+    "https://skillforge-a5-client.netlify.app/"
+    ],
+    
     credentials: true,
   })
 );
