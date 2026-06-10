@@ -7,7 +7,7 @@ import { EnrollmentService } from "../enrollment/enrollment.service";
 
 // ✅ SAFE STRIPE INIT (FIXED)
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-04-30.basil",
+ apiVersion: "2025-08-27.basil",
 });
 
 export class PaymentService {
