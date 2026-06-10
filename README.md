@@ -5,11 +5,6 @@
 
 This repository houses the scalable and secure backend application layer powering the **SkillForge Academy** platform. It is engineered utilizing **Node.js**, **Express v5**, **TypeScript**, **Prisma ORM**, and a relational **PostgreSQL** database engine.
 
-## 🚀 Live Links
-- **Backend API Live URL:** [Insert Render/Railway Live URL here]
-- **Frontend Live URL:** [Insert Vercel Live URL here]
-- **Frontend Repository:** [Insert Frontend GitHub Link here]
-
 ---
 
 ## ⚡ Core Architecture & Functionality
