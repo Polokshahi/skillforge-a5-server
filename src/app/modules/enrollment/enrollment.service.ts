@@ -9,14 +9,22 @@ export class EnrollmentService {
     const existing = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
+
     if (existing) throw new AppError("Already enrolled in this course", 409);
 
     return prisma.enrollment.create({
-      data: { userId, courseId },
+      data: {
+        userId,
+        courseId,
+        completedLessons: [], // ✅ IMPORTANT default
+        progress: 0,          // ✅ safe init
+      },
       include: {
         course: {
           include: {
-            instructor: { select: { id: true, name: true, avatar: true } },
+            instructor: {
+              select: { id: true, name: true, avatar: true },
+            },
             _count: { select: { lessons: true } },
           },
         },
@@ -32,8 +40,13 @@ export class EnrollmentService {
         course: {
           include: {
             category: true,
-            instructor: { select: { id: true, name: true, avatar: true } },
-            lessons: { orderBy: { order: "asc" }, select: { id: true, title: true, duration: true, order: true } },
+            instructor: {
+              select: { id: true, name: true, avatar: true },
+            },
+            lessons: {
+              orderBy: { order: "asc" },
+              select: { id: true, title: true, duration: true, order: true },
+            },
             _count: { select: { lessons: true } },
           },
         },
@@ -49,12 +62,18 @@ export class EnrollmentService {
     const enrollment = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
-    if (!enrollment) throw new AppError("Not enrolled in this course", 403);
+
+    if (!enrollment) {
+      throw new AppError("Not enrolled in this course", 403);
+    }
 
     const lesson = await prisma.lesson.findFirst({
       where: { id: lessonId, courseId },
     });
-    if (!lesson) throw new AppError("Lesson not found", 404);
+
+    if (!lesson) {
+      throw new AppError("Lesson not found", 404);
+    }
 
     await prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId, lessonId } },
@@ -62,33 +81,56 @@ export class EnrollmentService {
       update: { completed: true, watchedAt: new Date() },
     });
 
-    const completedLessons = enrollment.completedLessons.includes(lessonId)
-      ? enrollment.completedLessons
-      : [...enrollment.completedLessons, lessonId];
+    // ✅ SAFE JSON handling
+    const existingLessons = Array.isArray(enrollment.completedLessons)
+      ? (enrollment.completedLessons as string[])
+      : [];
 
-    const totalLessons = await prisma.lesson.count({ where: { courseId } });
-    const progress = totalLessons > 0 ? (completedLessons.length / totalLessons) * 100 : 0;
+    const completedLessons = existingLessons.includes(lessonId)
+      ? existingLessons
+      : [...existingLessons, lessonId];
+
+    const totalLessons = await prisma.lesson.count({
+      where: { courseId },
+    });
+
+    const progress =
+      totalLessons > 0
+        ? (completedLessons.length / totalLessons) * 100
+        : 0;
 
     return prisma.enrollment.update({
       where: { userId_courseId: { userId, courseId } },
-      data: { completedLessons, progress },
+      data: {
+        completedLessons,
+        progress,
+      },
     });
   }
 
   static async getAllEnrollments(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
+
     const [enrollments, total] = await Promise.all([
       prisma.enrollment.findMany({
         skip,
         take: limit,
         orderBy: { enrolledAt: "desc" },
         include: {
-          user: { select: { id: true, name: true, email: true } },
-          course: { select: { id: true, title: true, thumbnail: true } },
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          course: {
+            select: { id: true, title: true, thumbnail: true },
+          },
         },
       }),
       prisma.enrollment.count(),
     ]);
-    return { enrollments, meta: { total, page, limit } };
+
+    return {
+      enrollments,
+      meta: { total, page, limit },
+    };
   }
 }
