@@ -58,8 +58,7 @@ export class PaymentService {
               currency: "usd",
               product_data: {
                 name: course.title,
-                description: (course.description || "").slice(0, 200),
-                images: course.thumbnail ? [course.thumbnail] : [],
+description: course.description?.slice(0, 200) || "",                images: course.thumbnail ? [course.thumbnail] : [],
               },
               unit_amount: Math.round(course.price * 100),
             },
@@ -76,8 +75,7 @@ export class PaymentService {
         success_url: `${env.STRIPE_SUCCESS_URL || "http://localhost:3001/payment/success"
           }?session_id={CHECKOUT_SESSION_ID}`,
 
-        cancel_url: env.STRIPE_CANCEL_URL || "http://localhost:3001/courses",
-      });
+cancel_url: env.STRIPE_CANCEL_URL,      });
 
       await prisma.payment.update({
         where: { id: payment.id },
@@ -143,8 +141,7 @@ export class PaymentService {
     if (payment.status !== PaymentStatus.COMPLETED) {
       await this.markPaymentComplete(
         payment.id,
-        session.payment_intent as string
-      );
+session.payment_intent ? String(session.payment_intent) : undefined      );
     }
 
     return payment;
@@ -161,8 +158,7 @@ export class PaymentService {
 
     await this.markPaymentComplete(
       payment.id,
-      session.payment_intent as string | undefined
-    );
+session.payment_intent ? String(session.payment_intent) : undefined    );
   }
 
   private static async markPaymentComplete(
